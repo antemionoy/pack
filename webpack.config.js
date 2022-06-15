@@ -1,6 +1,8 @@
 const path = require('path');
 const webpack = require('webpack');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
 
 module.exports = {
     entry: path.resolve(__dirname, './src/index.js'),
@@ -14,38 +16,35 @@ module.exports = {
             {
                 test: /\.(s[ac]|c)ss$/i,
                 exclude: /node_modules/,
-                use: [
-                    process.env.NODE_ENV !== "production"
-                        ? "style-loader"
-                        : MiniCssExtractPlugin.loader,
-                    {
-                        loader: "css-loader",
-                        options: {
-                            sourceMap: true,
-                        },
-                    },
-                    {
-                        loader: "sass-loader",
-                        options: {
-                            sourceMap: true,
-                        },
-                    },
-                ],
-            },
-            {
-                test: /\.(jpg|jpeg|png)$/,
-                use: {
-                    loader: 'url-loader',
-                },
+                use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"],
             },
             {
                 test: /\.(woff|woff2)$/,
                 type: 'asset/resource'
             },
             {
-                test: /\.(js)$/,
-                exclude: /node_modules/,
-                // use: ['babel-loader', 'eslint-loader'],
+                test: /\.(png|jpe?g|gif)$/i,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: '[path][name].[ext]',
+                    },
+                },
+            },
+            {
+                test: /\.svg$/,
+                include: path.resolve(__dirname, 'src/assets/icons'),
+                use: [
+                    {
+                        loader: 'svg-sprite-loader',
+                        options: {
+                            extract: true,
+                            outputPath: '/'
+                        }
+                    },
+                    'svg-transform-loader',
+                    'svgo-loader'
+                ],
             },
         ]
     },
@@ -53,7 +52,8 @@ module.exports = {
         extensions: ['*', '.js', '.json', '.png', '.jsx', '.scss'],
         alias: {
             '@components': path.resolve(__dirname, './src/components'),
-            '@': path.resolve(__dirname, './app/src'),
+            '@assets': path.resolve(__dirname, './src/assets'),
+            '@': path.resolve(__dirname, './src'),
         }
     },
     output: {
@@ -62,10 +62,15 @@ module.exports = {
     },
     plugins: [
         new webpack.HotModuleReplacementPlugin(),
-        new MiniCssExtractPlugin({
-            filename: "[name].css",
-        }
-        ),
+        new MiniCssExtractPlugin(),
+        new HtmlWebpackPlugin({
+            title: 'pack',
+            inject: 'body',
+            template: 'index.html'
+        }),
+        new SpriteLoaderPlugin({
+            plainSprite: true
+        })
     ],
     devServer: {
         static: path.join(__dirname, './dist'),
